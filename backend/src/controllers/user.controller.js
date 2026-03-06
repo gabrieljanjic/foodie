@@ -19,32 +19,26 @@ const getAllUsers = async (req, res) => {
 const registerUser = async (req, res) => {
   try {
     const { username, password } = req.body;
-    console.log("1.");
     if (!username || !password) {
       return res.status(400).json({
         success: false,
         message: "Username and password are required",
       });
     }
-    console.log("2.");
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    console.log("3.");
 
     const result = await pool.query(
       "INSERT INTO users (username,password) VALUES ($1, $2) RETURNING id, username, created_at",
       [username, hashedPassword],
     );
-    console.log("4.", result.rows[0]);
 
     const user = result.rows[0];
-    console.log("5.", user);
     const token = jwt.sign(
       { id: user.id, username: user.username },
       process.env.JWT_SECRET,
       { expiresIn: "7d" },
     );
-    console.log("6.", token);
 
     res.status(201).json({ success: true, token, user: result.rows[0] });
   } catch (err) {
