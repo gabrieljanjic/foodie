@@ -11,7 +11,6 @@ type Props = {
 const ListOfRecipes = ({ allRecipes, navigation, navigationRecipe }: Props) => {
   return (
     <FlatList
-      className="mb-10"
       data={allRecipes}
       keyExtractor={(item) => item.id.toString()}
       renderItem={(itemData) => {

@@ -72,7 +72,7 @@ const MyRecipesScreen = ({ navigation }: MyRecipesScreenProps) => {
   }
 
   return (
-    <View className="p-4 flex-1">
+    <View className="px-4 pt-4 flex-1">
       <SearchRecipes search={search} setSearch={setSearch} />
       {filtered.length === 0 ? (
         <View className="flex-1 justify-center items-center">
