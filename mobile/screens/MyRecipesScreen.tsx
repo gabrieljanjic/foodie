@@ -57,7 +57,7 @@ const MyRecipesScreen = ({ navigation }: MyRecipesScreenProps) => {
 
   if (loading) {
     return (
-      <View>
+      <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" />
       </View>
     );
@@ -72,13 +72,19 @@ const MyRecipesScreen = ({ navigation }: MyRecipesScreenProps) => {
   }
 
   return (
-    <View className="p-4">
+    <View className="p-4 flex-1">
       <SearchRecipes search={search} setSearch={setSearch} />
-      <ListOfRecipes
-        navigation={navigation}
-        allRecipes={filtered}
-        navigationRecipe="EditRecipe"
-      />
+      {filtered.length === 0 ? (
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-gray-400">No recipes found</Text>
+        </View>
+      ) : (
+        <ListOfRecipes
+          navigation={navigation}
+          allRecipes={filtered}
+          navigationRecipe="EditRecipe"
+        />
+      )}
     </View>
   );
 };

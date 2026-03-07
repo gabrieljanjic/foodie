@@ -43,6 +43,6 @@ export type Category = {
 };
 
 export type CategoryStackParamList = {
-  Categories: undefined;
+  CategoriesScreen: undefined;
   RecipesByCategory: { categoryId: number; name: string };
 };

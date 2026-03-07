@@ -59,9 +59,11 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
       );
       return;
     }
-    await createUser(username, password);
-    setUsername("");
-    setPassword("");
+    const success = await createUser(username, password);
+    if (!success) {
+      setUsername("");
+      setPassword("");
+    }
   };
 
   return (
@@ -74,20 +76,20 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
         </Text>
         <Text className="text-gray-900">Username:</Text>
         <TextInput
-          className="p-2 px-3 border border-gray-600 rounded-md"
+          className="p-2 px-3 rounded-lg bg-white text-lg border border-gray-300 text-gray-800"
           value={username}
           autoCapitalize="none"
           onChangeText={(text) => setUsername(text)}
         />
         <Text className="text-gray-900">Password:</Text>
         <TextInput
-          className="p-2 px-3 border border-gray-600 rounded-md"
+          className="p-2 px-3 rounded-lg bg-white text-lg border border-gray-300 text-gray-800"
           value={password}
           autoCapitalize="none"
           secureTextEntry={true}
           onChangeText={(text) => setPassword(text)}
         />
-        {error && <Text>{error}</Text>}
+        {error && <Text className="color-red-500">{error}</Text>}
         <View className="mt-2">
           <Pressable
             onPress={registerUserHandler}

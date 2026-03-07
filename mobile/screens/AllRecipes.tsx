@@ -54,9 +54,11 @@ const AllRecipes = ({ navigation }: RecipeProps) => {
   }, []);
 
   if (loading) {
-    <View>
-      <ActivityIndicator size="large" />
-    </View>;
+    return (
+      <View className="flex-1 justify-center items-center">
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   if (error) {
@@ -68,13 +70,19 @@ const AllRecipes = ({ navigation }: RecipeProps) => {
   }
 
   return (
-    <View className="p-4">
+    <View className="p-4 flex-1">
       <SearchRecipes search={search} setSearch={setSearch} />
-      <ListOfRecipes
-        allRecipes={filtered}
-        navigation={navigation}
-        navigationRecipe="ExactRecipe"
-      />
+      {filtered.length === 0 ? (
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-gray-400">No recipes found</Text>
+        </View>
+      ) : (
+        <ListOfRecipes
+          allRecipes={filtered}
+          navigation={navigation}
+          navigationRecipe="ExactRecipe"
+        />
+      )}
     </View>
   );
 };

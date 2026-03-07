@@ -13,7 +13,8 @@ const AuthContext = createContext<any>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,6 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             headers: { Authorization: `Bearer ${token}` },
           });
           if (res.data.success) setUser(res.data.user);
+          setInitialLoading(false);
         } catch (err) {
           await SecureStore.deleteItemAsync("auth_token");
           setUser("");
@@ -47,6 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (res.data.success) {
         setUser(res.data.user);
         await SecureStore.setItemAsync("auth_token", res.data.token);
+        return true;
       }
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -54,6 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setError("Something went wrong");
       }
+      return false;
     } finally {
       setLoading(false);
     }

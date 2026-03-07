@@ -1,6 +1,6 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { View, Text, Pressable } from "react-native";
+import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import API_URL from "../data/api";
 import { Category } from "../utils/types";
 import { FlatList } from "react-native-gesture-handler";
@@ -8,19 +8,48 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CategoryStackParamList } from "../utils/types";
 
 type Props = {
-  navigation: NativeStackNavigationProp<CategoryStackParamList, "Categories">;
+  navigation: NativeStackNavigationProp<
+    CategoryStackParamList,
+    "CategoriesScreen"
+  >;
 };
 
 const Categories = ({ navigation }: Props) => {
   const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const loadCategories = async () => {
-      const res = await axios.get(`${API_URL}/categories`);
-      setCategories(res.data);
+      try {
+        setLoading(true);
+        const res = await axios.get(`${API_URL}/categories`);
+        setCategories(res.data);
+      } catch (err) {
+        setError("Something went wrong");
+      } finally {
+        setLoading(false);
+      }
     };
     loadCategories();
   }, []);
+
+  if (loading) {
+    return (
+      <View className="mt-40">
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text className="text-red-500">{error}</Text>
+      </View>
+    );
+  }
+
   return (
     <FlatList
       data={categories}

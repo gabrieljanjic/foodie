@@ -4,6 +4,7 @@
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
+    "description": "Foodie is a recipe sharing app where you can discover, create and save your favourite recipes. Browse hundreds of dishes, add your own creations and share them with the community.",
     "icon": "./assets/images/bowl.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -19,11 +20,23 @@
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/bowl.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.gjanjic.foodie"
     },
     "web": {
       "favicon": "./assets/images/bowl.png"
     },
-    "plugins": ["expo-secure-store"]
+    "plugins": ["expo-secure-store"],
+    "extra": {
+      "eas": {
+        "projectId": "09fcf7cb-d18d-4c33-a1b2-ca6419f30171"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/09fcf7cb-d18d-4c33-a1b2-ca6419f30171"
+    }
   }
 }

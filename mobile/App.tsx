@@ -23,6 +23,7 @@ import Ionicons from "@react-native-vector-icons/ionicons";
 import MyRecipesScreen from "./screens/MyRecipesScreen";
 import EditRecipe from "./screens/EditRecipe";
 import ExactUserRecipes from "./screens/ExactUserRecipes";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 const AuthStackNav = createStackNavigator<AuthStackParamList>();
 function AuthStack() {
@@ -94,7 +95,7 @@ const CategoryStack = createStackNavigator<CategoryStackParamList>();
 function AppCategoryStacks() {
   return (
     <CategoryStack.Navigator>
-      <CategoryStack.Screen name="Categories" component={Category} />
+      <CategoryStack.Screen name="CategoriesScreen" component={Category} />
       <CategoryStack.Screen
         name="RecipesByCategory"
         component={RecipesByCategory}
@@ -121,7 +122,7 @@ function AppStack() {
       <Stack.Screen
         name="ExactRecipe"
         component={ExactRecipe}
-        options={{ title: "" }}
+        options={{ title: "", animation: "fade" }}
       />
       <Stack.Screen
         name="EditRecipe"
@@ -140,10 +141,12 @@ function AppStack() {
 const App = () => {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <StatusBar style="dark" />
-        <RootNavigator />
-      </NavigationContainer>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <StatusBar style="dark" />
+          <RootNavigator />
+        </NavigationContainer>
+      </SafeAreaProvider>
     </AuthProvider>
   );
 };
@@ -151,10 +154,10 @@ const App = () => {
 export default App;
 
 function RootNavigator() {
-  const { user, loading } = useAuth();
-  if (loading) {
+  const { user, initialLoading } = useAuth();
+  if (initialLoading) {
     return (
-      <View>
+      <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" />
       </View>
     );

@@ -334,7 +334,7 @@ const AddRecipe = ({ navigation }: AddRecipeProps) => {
         >
           <Text className="text-white text-center">Add</Text>
         </Pressable>
-        <Text className="mt-1">Category</Text>
+        <Text className="my-1">Category</Text>
         <View className="bg-white rounded-lg border border-gray-300">
           <Picker
             selectedValue={selectedCategory}
@@ -353,7 +353,7 @@ const AddRecipe = ({ navigation }: AddRecipeProps) => {
         </View>
         <View className="w-20 self-end mt-3 mb-12">
           <Pressable
-            className={`rounded-lg py-1 ${loading ? "bg-red-300" : "bg-red-500"}`}
+            className={`rounded-lg p-2 ${loading ? "bg-red-300" : "bg-red-500"}`}
             onPress={handleSubmit}
             disabled={loading}
           >

@@ -12,7 +12,7 @@ const HomeScreen = ({ navigation }: HomeScreenProps) => {
     <>
       <StatusBar style="light" />
       <ImageBackground
-        source={require("../assets/images/a.jpg")}
+        source={require("../assets/images/home-page.webp")}
         className="flex-1 w-full h-full"
         resizeMode="cover"
       >
