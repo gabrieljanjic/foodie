@@ -6,7 +6,7 @@ A full-stack mobile recipe app built with React Native and Node.js. Browse recip
 
 ## 📱 Screenshots
 
-| ![Home](./mobile/assets/images/foodie-mobile.png) |
+![Home](./mobile/assets/images/foodie-mobile.png) |
 
 ---
 
@@ -121,4 +121,4 @@ _For environment variables and local setup, feel free to reach out._
 ## 👤 Author
 
 **Gabriel Janjić**  
-[GitHub](https://github.com/gjanjic)
+[GitHub](https://github.com/gabrieljanjic)
