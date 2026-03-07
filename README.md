@@ -6,7 +6,7 @@ A full-stack mobile recipe app built with React Native and Node.js. Browse recip
 
 ## 📱 Screenshots
 
-![Home](./mobile/assets/images/mobitel.PNG)
+![Home](./mobile/assets/images/mobile-png.png)
 
 ---
 
