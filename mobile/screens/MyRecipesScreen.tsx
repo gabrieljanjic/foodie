@@ -1,5 +1,5 @@
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { useAuth } from "../contexts/authContext";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { AuthStackParamList, ShortRecipe } from "../utils/types";
@@ -8,7 +8,7 @@ import API_URL from "../data/api";
 import * as SecureStore from "expo-secure-store";
 import ListOfRecipes from "../components/ListOfRecipes";
 import SearchRecipes from "../components/SearchRecipes";
-import { useFocusEffect } from "@react-navigation/native";
+import { useQuery } from "@tanstack/react-query";
 
 type MyRecipesScreenProps = {
   navigation: BottomTabNavigationProp<AuthStackParamList, "Profile">;
@@ -16,14 +16,7 @@ type MyRecipesScreenProps = {
 
 const MyRecipesScreen = ({ navigation }: MyRecipesScreenProps) => {
   const { logoutUser } = useAuth();
-  const [myRecipes, setMyRecipes] = useState<ShortRecipe[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const filtered = myRecipes.filter((rec) =>
-    rec.title.toLowerCase().includes(search.toLowerCase()),
-  );
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -35,27 +28,24 @@ const MyRecipesScreen = ({ navigation }: MyRecipesScreenProps) => {
     });
   }, [navigation]);
 
-  useFocusEffect(
-    useCallback(() => {
-      const getMyRecipes = async () => {
-        const token = await SecureStore.getItemAsync("auth_token");
-        try {
-          setLoading(true);
-          const res = await axios.get(`${API_URL}/recipes-by-me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setMyRecipes(res.data.recipes);
-        } catch (err) {
-          setError("Something went wrong");
-        } finally {
-          setLoading(false);
-        }
-      };
-      getMyRecipes();
-    }, []),
+  const fetchRecipes = async () => {
+    const token = await SecureStore.getItemAsync("auth_token");
+
+    const res = await axios.get(`${API_URL}/recipes-by-me`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.data.recipes;
+  };
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["myRecipes"],
+    queryFn: fetchRecipes,
+  });
+  const filtered = (data ?? []).filter((rec: ShortRecipe) =>
+    rec.title.toLowerCase().includes(search.toLowerCase()),
   );
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" />
@@ -66,7 +56,7 @@ const MyRecipesScreen = ({ navigation }: MyRecipesScreenProps) => {
   if (error) {
     return (
       <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500">{error}</Text>
+        <Text className="text-red-500">{error.message}</Text>
       </View>
     );
   }

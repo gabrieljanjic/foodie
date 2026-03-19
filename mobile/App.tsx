@@ -24,6 +24,7 @@ import MyRecipesScreen from "./screens/MyRecipesScreen";
 import EditRecipe from "./screens/EditRecipe";
 import ExactUserRecipes from "./screens/ExactUserRecipes";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const AuthStackNav = createStackNavigator<AuthStackParamList>();
 function AuthStack() {
@@ -138,15 +139,19 @@ function AppStack() {
   );
 }
 
+const queryClient = new QueryClient();
+
 const App = () => {
   return (
     <AuthProvider>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <StatusBar style="dark" />
-          <RootNavigator />
-        </NavigationContainer>
-      </SafeAreaProvider>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <StatusBar style="dark" />
+            <RootNavigator />
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </QueryClientProvider>
     </AuthProvider>
   );
 };

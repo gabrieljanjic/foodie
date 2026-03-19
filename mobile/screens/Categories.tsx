@@ -1,11 +1,10 @@
 import axios from "axios";
-import { useEffect, useState } from "react";
 import { View, Text, Pressable, ActivityIndicator } from "react-native";
 import API_URL from "../data/api";
-import { Category } from "../utils/types";
 import { FlatList } from "react-native-gesture-handler";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { CategoryStackParamList } from "../utils/types";
+import { useQuery } from "@tanstack/react-query";
 
 type Props = {
   navigation: NativeStackNavigationProp<
@@ -15,26 +14,21 @@ type Props = {
 };
 
 const Categories = ({ navigation }: Props) => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const fetchCategories = async () => {
+    const res = await axios.get(`${API_URL}/categories`);
+    return res.data;
+  };
 
-  useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(`${API_URL}/categories`);
-        setCategories(res.data);
-      } catch (err) {
-        setError("Something went wrong");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadCategories();
-  }, []);
+  const {
+    data: categories,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["categories"],
+    queryFn: fetchCategories,
+  });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <View className="mt-40">
         <ActivityIndicator size="large" />
@@ -45,7 +39,7 @@ const Categories = ({ navigation }: Props) => {
   if (error) {
     return (
       <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500">{error}</Text>
+        <Text className="text-red-500">{error.message}</Text>
       </View>
     );
   }

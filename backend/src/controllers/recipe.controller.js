@@ -227,19 +227,16 @@ const getRecipesByUser = async (req, res) => {
 
 const deleteRecipe = async (req, res) => {
   const recipeId = req.params.id;
-
   try {
     const recipe = await pool.query(
       `SELECT * FROM recipes WHERE id=$1 AND user_id=$2`,
-      [id, req.user.id],
+      [recipeId, req.user.id],
     );
-
     if (recipe.rows.length === 0) {
       return res
         .status(403)
         .json({ success: false, message: "Not authorized" });
     }
-
     await pool.query(`UPDATE recipes SET deleted_at=NOW() WHERE id=$1 `, [
       recipeId,
     ]);

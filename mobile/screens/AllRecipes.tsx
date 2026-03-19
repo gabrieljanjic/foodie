@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { View, Pressable, ActivityIndicator, Text } from "react-native";
 import { Ionicons } from "@react-native-vector-icons/ionicons";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -8,20 +8,14 @@ import { RootStackParamList, ShortRecipe } from "../utils/types";
 import ListOfRecipes from "../components/ListOfRecipes";
 import { TextInput } from "react-native-gesture-handler";
 import SearchRecipes from "../components/SearchRecipes";
+import { useQuery } from "@tanstack/react-query";
 
 type RecipeProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, "Tabs">;
 };
 
 const AllRecipes = ({ navigation }: RecipeProps) => {
-  const [allRecipes, setAllRecipes] = useState<ShortRecipe[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const filtered = allRecipes.filter((rec) =>
-    rec.title.toLowerCase().includes(search.toLowerCase()),
-  );
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -36,24 +30,24 @@ const AllRecipes = ({ navigation }: RecipeProps) => {
     });
   }, [navigation]);
 
-  useEffect(() => {
-    const getAllRecipes = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(`${API_URL}/recipes`);
-        if (res.data.success) {
-          setAllRecipes(res.data.allRecipes);
-        }
-      } catch (err) {
-        setError("Something went wrong");
-      } finally {
-        setLoading(false);
-      }
-    };
-    getAllRecipes();
-  }, []);
+  const fetchRecipes = async () => {
+    const res = await axios.get(`${API_URL}/recipes`);
+    if (res.data.success) {
+      return res.data.allRecipes;
+    }
+    throw new Error("Failed to fetch recipes");
+  };
 
-  if (loading) {
+  const { data, isLoading, error } = useQuery<ShortRecipe[]>({
+    queryKey: ["allRecipes"],
+    queryFn: fetchRecipes,
+  });
+
+  const filtered = (data ?? []).filter((rec: ShortRecipe) =>
+    rec.title.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" />
@@ -64,7 +58,7 @@ const AllRecipes = ({ navigation }: RecipeProps) => {
   if (error) {
     return (
       <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500">{error}</Text>
+        <Text className="text-red-500">{error.message}</Text>
       </View>
     );
   }

@@ -20,13 +20,21 @@ import Checkbox from "expo-checkbox";
 import * as ImagePicker from "expo-image-picker";
 import * as SecureStore from "expo-secure-store";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 type Props = NativeStackScreenProps<RootStackParamList, "EditRecipe">;
 
 const EditRecipe = ({ navigation, route }: Props) => {
+  const keysToInvalidate = [
+    "allRecipes",
+    "exactRecipes",
+    "usersRecipes",
+    "myRecipes",
+    "categoryRecipes",
+  ];
   const { id } = route.params;
+  const queryClient = useQueryClient();
 
-  const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [showImagePicker, setShowImagePicker] = useState(false);
 
@@ -43,61 +51,48 @@ const EditRecipe = ({ navigation, route }: Props) => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <Pressable onPress={deleteRecipe} className="px-4">
+        <Pressable onPress={() => deleteMutation.mutate()} className="px-4">
           <Text className="text-red-500 font-semibold">Delete</Text>
         </Pressable>
       ),
     });
-  }, [navigation]);
+  }, []);
 
-  const deleteRecipe = async () => {
-    try {
-      const token = await SecureStore.getItemAsync("auth_token");
-      const res = await axios.put(
-        `${API_URL}/delete-recipe/${id}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
-      if (res.data.success) {
-        navigation.goBack();
-      }
-    } catch (err) {
-      Alert.alert("Error", "Something went wrong");
-    }
+  const fetchData = async () => {
+    const [recipeRes, categoriesRes] = await Promise.all([
+      axios.get(`${API_URL}/recipe/${id}`),
+      axios.get(`${API_URL}/categories`),
+    ]);
+
+    if (!recipeRes.data.success) throw new Error("Failed to fetch recipe");
+
+    return {
+      recipe: recipeRes.data.recipe,
+      categories: categoriesRes.data,
+    };
   };
 
+  const { data, isLoading } = useQuery({
+    queryKey: ["editRecipe", id],
+    queryFn: fetchData,
+  });
+
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const [recipeRes, categoriesRes] = await Promise.all([
-          axios.get(`${API_URL}/recipe/${id}`),
-          axios.get(`${API_URL}/categories`),
-        ]);
-
-        if (recipeRes.data.success) {
-          const r = recipeRes.data.recipe;
-          navigation.setOptions({ title: r.title });
-          setTitle(r.title);
-          setDescription(r.description);
-          setInstructions(r.instructions ?? "");
-          setServings(String(r.servings ?? "1"));
-          setTime(String(r.cook_time));
-          setPrivateCheck(r.is_private);
-          setSelectedCategory(r.category_id);
-          setImage(r.image_url ?? null);
-          setIngredients(r.ingredients?.length ? r.ingredients : [""]);
-        }
-
-        setCategories(categoriesRes.data);
-      } catch (err) {
-        Alert.alert("Error", "Something wen wrong");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+    if (data) {
+      const r = data.recipe;
+      navigation.setOptions({ title: r.title });
+      setTitle(r.title);
+      setDescription(r.description);
+      setInstructions(r.instructions ?? "");
+      setServings(String(r.servings ?? "1"));
+      setTime(String(r.cook_time));
+      setPrivateCheck(r.is_private);
+      setSelectedCategory(r.category_id);
+      setImage(r.image_url ?? null);
+      setIngredients(r.ingredients?.length ? r.ingredients : [""]);
+      setCategories(data.categories);
+    }
+  }, [data]);
 
   const updateIngredient = (index: number, value: string) => {
     setIngredients((prev) => {
@@ -106,7 +101,6 @@ const EditRecipe = ({ navigation, route }: Props) => {
       return next;
     });
   };
-
   const addIngredient = () => setIngredients((prev) => [...prev, ""]);
   const removeIngredient = (index: number) =>
     setIngredients((prev) => prev.filter((_, i) => i !== index));
@@ -115,7 +109,8 @@ const EditRecipe = ({ navigation, route }: Props) => {
     setShowImagePicker(false);
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== "granted")
-      return Alert.alert("You have to give access to camera");
+      return Alert.alert("Permission needed", "Camera access required");
+
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       quality: 0.8,
@@ -127,7 +122,8 @@ const EditRecipe = ({ navigation, route }: Props) => {
     setShowImagePicker(false);
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted")
-      return Alert.alert("You have to give the permission");
+      return Alert.alert("Permission needed", "Gallery access required");
+
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: true,
       quality: 0.8,
@@ -135,19 +131,10 @@ const EditRecipe = ({ navigation, route }: Props) => {
     if (!result.canceled) setImage(result.assets[0].uri);
   };
 
-  const handleUpdate = async () => {
-    try {
-      setLoading(true);
+  const updateMutation = useMutation({
+    mutationFn: async () => {
       const token = await SecureStore.getItemAsync("auth_token");
-      if (!token) return;
-
-      if (!title || !description || !selectedCategory || !time) {
-        Alert.alert(
-          "Required fields",
-          "Title, description, category and time are required.",
-        );
-        return;
-      }
+      if (!token) throw new Error("No token");
 
       let imageUrl = image;
 
@@ -165,6 +152,7 @@ const EditRecipe = ({ navigation, route }: Props) => {
             "Content-Type": "multipart/form-data",
           },
         });
+
         imageUrl = uploadRes.data.url;
       }
 
@@ -184,17 +172,38 @@ const EditRecipe = ({ navigation, route }: Props) => {
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      if (res.data.success) {
-        navigation.goBack();
-      }
-    } catch (err) {
-      Alert.alert("Error", "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+      if (!res.data.success) throw new Error("Update failed");
+    },
+    onSuccess: () => {
+      keysToInvalidate.forEach((key) =>
+        queryClient.invalidateQueries({ queryKey: [key] }),
+      );
+      queryClient.invalidateQueries({ queryKey: ["recipe", id] });
+      navigation.goBack();
+    },
+    onError: () => Alert.alert("Error", "Something went wrong"),
+  });
 
-  if (loading) {
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const token = await SecureStore.getItemAsync("auth_token");
+      const res = await axios.put(
+        `${API_URL}/delete-recipe/${id}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (!res.data.success) throw new Error("Delete failed");
+    },
+    onSuccess: () => {
+      keysToInvalidate.forEach((key) =>
+        queryClient.invalidateQueries({ queryKey: [key] }),
+      );
+      navigation.goBack();
+    },
+    onError: () => Alert.alert("Error", "Something went wrong"),
+  });
+
+  if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" />
@@ -204,25 +213,19 @@ const EditRecipe = ({ navigation, route }: Props) => {
 
   return (
     <SafeAreaView className="flex-1" edges={["bottom"]}>
-      <KeyboardAvoidingView
-        behavior="padding"
-        keyboardVerticalOffset={100}
-        style={{ flex: 1 }}
-      >
-        <ScrollView
-          contentContainerStyle={{ padding: 16 }}
-          keyboardShouldPersistTaps="handled"
-        >
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <ScrollView contentContainerStyle={{ padding: 16 }}>
           <Text className="mb-1">Title</Text>
           <TextInput
             className="p-2 rounded-lg bg-white text-lg border border-gray-300 text-gray-800"
             value={title}
             onChangeText={setTitle}
           />
+
           <Text className="mb-1 mt-3">Upload picture</Text>
           <Modal
             visible={showImagePicker}
-            transparent={true}
+            transparent
             animationType="fade"
             onRequestClose={() => setShowImagePicker(false)}
           >
@@ -274,6 +277,7 @@ const EditRecipe = ({ navigation, route }: Props) => {
               </View>
             </Pressable>
           </Modal>
+
           <View className="bg-white border border-gray-300 rounded-md p-5">
             <Pressable onPress={() => setShowImagePicker(true)}>
               {image ? (
@@ -298,48 +302,42 @@ const EditRecipe = ({ navigation, route }: Props) => {
 
           <Text className="mt-3 mb-1">Instructions</Text>
           <TextInput
-            multiline
             value={instructions}
             onChangeText={setInstructions}
+            multiline
             className="p-2 pb-8 rounded-lg bg-white text-lg border border-gray-300 text-gray-800"
           />
 
-          <View className="flex-row gap-3 mt-3">
-            <View className="w-4/12">
-              <Text className="mb-1">Servings</Text>
-              <TextInput
-                value={servings}
-                onChangeText={setServings}
-                className="p-2 rounded-lg bg-white text-lg border border-gray-300 text-gray-800"
-                keyboardType="number-pad"
-              />
-            </View>
-            <View className="w-5/12">
-              <Text className="mb-1">Time in mins</Text>
-              <TextInput
-                value={time}
-                onChangeText={setTime}
-                className="p-2 rounded-lg bg-white text-lg border border-gray-300 text-gray-800"
-                keyboardType="number-pad"
-              />
-            </View>
-            <View>
-              <Text className="mb-1">Private</Text>
-              <Checkbox
-                value={privateCheck}
-                onValueChange={setPrivateCheck}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderWidth: 1,
-                  backgroundColor: "#fff",
-                  borderColor: "#d1d5db",
-                  borderRadius: 6,
-                }}
-                color={privateCheck ? "red" : undefined}
-              />
-            </View>
-          </View>
+          <Text className="mt-3 mb-1">Servings</Text>
+          <TextInput
+            value={servings}
+            onChangeText={setServings}
+            className="p-2 rounded-lg bg-white text-lg border border-gray-300 text-gray-800"
+            keyboardType="number-pad"
+          />
+
+          <Text className="mt-3 mb-1">Time in mins</Text>
+          <TextInput
+            value={time}
+            onChangeText={setTime}
+            className="p-2 rounded-lg bg-white text-lg border border-gray-300 text-gray-800"
+            keyboardType="number-pad"
+          />
+
+          <Text className="mt-3 mb-1">Private</Text>
+          <Checkbox
+            value={privateCheck}
+            onValueChange={setPrivateCheck}
+            style={{
+              width: 28,
+              height: 28,
+              borderWidth: 1,
+              backgroundColor: "#fff",
+              borderColor: "#d1d5db",
+              borderRadius: 6,
+            }}
+            color={privateCheck ? "red" : undefined}
+          />
 
           <Text className="mt-3 mb-1">Ingredients</Text>
           {ingredients.map((ing, index) => (
@@ -385,19 +383,17 @@ const EditRecipe = ({ navigation, route }: Props) => {
             </Picker>
           </View>
 
-          <View className="w-20 self-end mt-3 mb-12">
-            <Pressable
-              className={`rounded-lg py-1 ${loading ? "bg-red-300" : "bg-red-500"}`}
-              onPress={handleUpdate}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Text className="text-white text-center text-lg">Save</Text>
-              )}
-            </Pressable>
-          </View>
+          <Pressable
+            className={`rounded-lg py-1 ${updateMutation.isPending ? "bg-red-300" : "bg-red-500"} mt-3 mb-12`}
+            onPress={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text className="text-white text-center text-lg">Save</Text>
+            )}
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

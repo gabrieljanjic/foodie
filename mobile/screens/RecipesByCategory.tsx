@@ -1,11 +1,12 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { CategoryStackParamList, ShortRecipe } from "../utils/types";
 import { View, Text, ActivityIndicator } from "react-native";
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import axios from "axios";
 import API_URL from "../data/api";
 import ListOfRecipes from "../components/ListOfRecipes";
 import SearchRecipes from "../components/SearchRecipes";
+import { useQuery } from "@tanstack/react-query";
 
 type Props = NativeStackScreenProps<
   CategoryStackParamList,
@@ -14,37 +15,27 @@ type Props = NativeStackScreenProps<
 
 const RecipesByCategory = ({ route, navigation }: Props) => {
   const { categoryId, name } = route.params;
-  const [allRecipes, setAllRecipes] = useState<ShortRecipe[]>([]);
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const filtered = allRecipes.filter((rec) =>
-    rec.title.toLowerCase().includes(search.toLowerCase()),
-  );
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: name });
   }, []);
 
-  useEffect(() => {
-    const getRecipesByCategory = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(
-          `${API_URL}/recipe-by-category/${categoryId}`,
-        );
-        setAllRecipes(res.data.recipes);
-      } catch (err) {
-        setError("Something went wrong");
-      } finally {
-        setLoading(false);
-      }
-    };
-    getRecipesByCategory();
-  }, []);
+  const fetchRecipes = async () => {
+    const res = await axios.get(`${API_URL}/recipe-by-category/${categoryId}`);
+    return res.data.recipes;
+  };
 
-  if (loading) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["categoryRecipes", categoryId],
+    queryFn: fetchRecipes,
+  });
+
+  const filtered = (data ?? []).filter((rec: ShortRecipe) =>
+    rec.title.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  if (isLoading) {
     return (
       <View className="flex-1 justify-center items-center">
         <ActivityIndicator size="large" />
@@ -55,7 +46,7 @@ const RecipesByCategory = ({ route, navigation }: Props) => {
   if (error)
     return (
       <View className="flex-1 justify-center items-center">
-        <Text className="text-red-500">{error}</Text>
+        <Text className="text-red-500">{error.message}</Text>
       </View>
     );
 
