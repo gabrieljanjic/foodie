@@ -10,7 +10,7 @@ type HomeScreenProps = {
 const HomeScreen = ({ navigation }: HomeScreenProps) => {
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <ImageBackground
         source={require("../assets/images/home-page.webp")}
         className="flex-1 w-full h-full"
